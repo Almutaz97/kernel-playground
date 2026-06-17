@@ -7,6 +7,11 @@ pushd ../
 
 # Init all submodules
 for module in $(git submodule status | awk '{print $2}'); do
+	# If the submodule directory exists but has no .git (e.g. from a failed
+	# previous clone), remove it so git can clone cleanly.
+	if [ -d "${module}" ] && [ ! -e "${module}/.git" ]; then
+		rm -rf "${module}"
+	fi
 	if [ "${module}" == "kernel/linux" ]; then
 		# A shallow clone with depth 1 fetches only the latest code
 		#snapshot of the Linux kernel repository, reducing download
