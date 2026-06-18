@@ -3,6 +3,18 @@
 set -x
 set -e
 
+# Ensure KVM acceleration is available — required to run the QEMU VM.
+# On bare-metal Linux this is present by default. Inside a hypervisor
+# (VMware, VirtualBox, QEMU/KVM, etc.) nested virtualization must be
+# enabled in the hypervisor settings first.
+if ! kvm-ok > /dev/null 2>&1; then
+	echo "Error: KVM acceleration is not available." >&2
+	kvm-ok >&2
+	echo "If running inside a hypervisor, enable nested virtualization" >&2
+	echo "in your hypervisor settings and retry." >&2
+	exit 1
+fi
+
 pushd ../
 
 # Init all submodules
