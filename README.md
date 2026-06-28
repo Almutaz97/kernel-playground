@@ -22,9 +22,9 @@ kernel/modules/snf_lkm.c
 
 The module was built inside the provided container-based development environment and tested inside a QEMU virtual machine. This is important because kernel modules run with high privileges inside the kernel. Testing the module inside a VM keeps the host system safe: if the module crashes the kernel, only the virtual machine is affected, not the host operating system.
 
-## 2. Repository and Branch Information
+## 2. Repository Information
 
-The work was developed inside the `kernel-playground` repository, which is the repository required for Linux kernel/module projects in this assignment.
+The work was developed inside the `kernel-playground` repository, which is the required repository for Linux kernel/module projects in this assignment.
 
 The working repository path inside the development environment is:
 
@@ -32,29 +32,16 @@ The working repository path inside the development environment is:
 /opt/kernel-playground
 ```
 
-The project is developed on the following fork:
-
-```text
-https://github.com/Almutaz97/kernel-playground
-```
-
-The working branch for this module is:
-
-```text
-m3-http-packet-logger
-```
-
-The main implementation file is:
+The main implementation file of this project is:
 
 ```text
 kernel/modules/snf_lkm.c
 ```
 
-The final documentation is written directly in the root `README.md` file. No separate documentation file is used for this project. Screenshots and evidence images, when needed, can be stored under:
+Screenshots and evidence images, when needed, can be stored under:
 
 ```text
 docs/images/
 ```
 
-The intended final delivery state is that this branch contains the implemented kernel module, the full root README documentation, and the evidence screenshots. After verification, the branch can be merged into the `main` branch of the fork.
-
+The final delivery is intended to be available from the `main` branch of the forked repository.
