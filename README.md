@@ -49,16 +49,45 @@ The development workflow used two isolated layers:
 
 The module was built inside the container environment. This container includes the required build tools, kernel headers, compiler, and project files needed to compile the out-of-tree kernel module.
 
-The actual module execution was done inside a QEMU VM. The compiled `.ko` kernel module was mounted to the VM and loaded inside the VM kernel using `insmod`. All runtime tests, including HTTP traffic detection and blacklist-based packet dropping, were performed inside this virtual machine.
+The actual module execution was done inside a QEMU VM. The compiled `.ko` kernel module was loaded inside the VM kernel using `insmod`. All runtime tests, including HTTP traffic detection and blacklist-based packet dropping, were performed inside this virtual machine.
 
 This setup is important because Linux kernel modules run inside kernel space. A bug in kernel-space code can crash the running kernel. By testing inside a QEMU VM, the experiment is isolated from the host operating system. If the module causes a crash, only the VM is affected, while the host system and development container remain safe.
 
-In this project, the QEMU VM used a virtual network configuration where HTTP traffic reached the VM through port forwarding. During testing, the observed VM-side network values were:
+For the network experiment, the QEMU VM used user-mode networking with port forwarding. The relevant VM startup file was:
 
-```text id="dlba6o"
+```text id="duwqvo"
+tests/vm/run.sh
+```
+
+The QEMU network option was configured as follows:
+
+```bash id="1fqbez"
+-netdev user,host=10.0.2.10,id=mynet0,hostfwd=tcp::10022-:22,hostfwd=tcp::10080-:80
+```
+
+This configuration created a virtual network between the container side and the QEMU VM.
+
+The option `host=10.0.2.10` made forwarded connections appear inside the VM as coming from the QEMU-side address `10.0.2.10`. This is why the kernel module logs HTTP packets with source IP `10.0.2.10`.
+
+The forwarding rules exposed selected VM ports outside the VM:
+
+```text id="y0sitd"
+hostfwd=tcp::10022-:22    forwards port 10022 to VM port 22
+hostfwd=tcp::10080-:80    forwards port 10080 to VM port 80
+```
+
+The SSH forwarding rule was useful for accessing the VM. The HTTP forwarding rule was necessary for the experiment because it allowed HTTP requests sent to port `10080` from outside the VM to reach port `80` inside the VM.
+
+Since the kernel module detects HTTP traffic by checking TCP destination port `80`, this forwarding rule made it possible to trigger and test the Netfilter hook.
+
+During testing, the observed VM-side network values were:
+
+```text id="lvms9j"
 VM IP address:        10.0.2.15
 QEMU source address:  10.0.2.10
 HTTP port:            80
 ```
+
+The source IP address `10.0.2.10` was later added to the runtime blacklist to verify that the module could drop HTTP traffic from a selected source.
 
 The source IP address `10.0.2.10` was later added to the runtime blacklist to verify that the module could drop HTTP traffic from a selected source.
