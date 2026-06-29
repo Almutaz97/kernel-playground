@@ -226,6 +226,160 @@ static DEFINE_SPINLOCK(blacklist_lock);
 2. The Netfilter callback can read the blacklist while packets are being inspected.
 ```
 
+### 5.4 Runtime Blacklist Helper Functions
+
+This part of the module contains helper functions used by the Netfilter callback and the `/proc` interface.
+
+#### 5.4.1 Checking whether a source IP is from the allowed range
+
+```c id="kgp117"
+static bool src_ip_allowed(__be32 saddr)
+{
+        __u32 src = ntohl(saddr);
+
+        return (src & ALLOWED_MASK) == ALLOWED_NET;
+}
+```
+
+The function `src_ip_allowed` checks whether the source IP address belongs to the `10.0.2.0/24` range.
+
+The parameter `saddr` is the source IP address taken from the IPv4 header. It is stored in network byte order, so the function first converts it using:
+
+```c id="18srn2"
+ntohl(saddr)
+```
+
+`ntohl` means “network to host long”. It converts the 32-bit IP address from network byte order into host byte order so the module can compare it with `ALLOWED_NET`.
+
+Then the function applies the subnet mask:
+
+```c id="c6x0mm"
+src & ALLOWED_MASK
+```
+
+This keeps only the network part of the IP address. If the result equals `ALLOWED_NET`, the source IP is considered part of the allowed range.
+
+In this project, this function is used only for logging. It decides whether the accepted packet should be logged as:
+
+```text id="yiz9kh"
+accepted from allowed range
+```
+
+or:
+
+```text id="79roib"
+accepted from outside range
+```
+
+It does not decide whether the packet is dropped. Dropping is controlled only by the blacklist.
+
+#### 5.4.2 Checking whether an IP is blacklisted
+
+```c id="q2u2s5"
+static bool ip_blacklisted(__be32 saddr)
+{
+        unsigned int i;
+        bool found = false;
+
+        spin_lock_bh(&blacklist_lock);
+        for (i = 0; i < blacklist_count; i++) {
+                if (blacklist[i] == saddr) {
+                        found = true;
+                        break;
+                }
+        }
+        spin_unlock_bh(&blacklist_lock);
+
+        return found;
+}
+```
+
+The function `ip_blacklisted` checks whether the packet source IP exists in the runtime blacklist.
+
+It loops through the `blacklist` array from index `0` to `blacklist_count - 1`. If one stored blacklist entry equals the packet source address, the function returns `true`.
+
+The function uses:
+
+```c id="k52jn6"
+spin_lock_bh(&blacklist_lock);
+```
+
+and:
+
+```c id="ir67sr"
+spin_unlock_bh(&blacklist_lock);
+```
+
+This protects the blacklist while it is being read. The `_bh` version is used because the Netfilter callback can run in a networking/softirq-related context. Disabling bottom halves while holding the lock helps avoid unsafe concurrent access between packet processing and `/proc` updates.
+
+The function returns:
+
+```text id="5u45ft"
+true   if the source IP is blacklisted
+false  if the source IP is not blacklisted
+```
+
+#### 5.4.3 Parsing an IPv4 address from text
+
+```c id="bc39rq"
+static int parse_ipv4(const char *text, __be32 *addr)
+{
+        unsigned int a, b, c, d;
+        __u32 host_addr;
+
+        if (sscanf(text, "%u.%u.%u.%u", &a, &b, &c, &d) != 4)
+                return -EINVAL;
+
+        if (a > 255 || b > 255 || c > 255 || d > 255)
+                return -EINVAL;
+
+        host_addr = (a << 24) | (b << 16) | (c << 8) | d;
+        *addr = htonl(host_addr);
+
+        return 0;
+}
+```
+
+The function `parse_ipv4` converts a text IP address, such as:
+
+```text id="l0kxgo"
+10.0.2.10
+```
+
+into the binary format used by the kernel.
+
+The function first reads four decimal numbers using `sscanf`:
+
+```c id="ikfq1k"
+sscanf(text, "%u.%u.%u.%u", &a, &b, &c, &d)
+```
+
+If the input does not contain four numbers separated by dots, the function returns:
+
+```c id="t0c2u4"
+-EINVAL
+```
+
+`-EINVAL` means “invalid argument”.
+
+Then the function checks that each part of the IP address is between `0` and `255`. This is required because each IPv4 octet can only have values in that range.
+
+After validation, the function builds the 32-bit IP address:
+
+```c id="dy3dqs"
+host_addr = (a << 24) | (b << 16) | (c << 8) | d;
+```
+
+Finally, it converts the address to network byte order:
+
+```c id="uy9xvd"
+*addr = htonl(host_addr);
+```
+
+`htonl` means “host to network long”. This is necessary because IP addresses in packet headers are stored in network byte order. By storing blacklist entries in the same format, the module can compare them directly with `iph->saddr`.
+
+If parsing succeeds, the function returns `0`.
+
 Without a lock, the module could read the blacklist while it is being updated, which may lead to inconsistent behavior.
 
 The module also defines a per-network namespace data structure:
