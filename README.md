@@ -1,29 +1,12 @@
-<<<<<<< HEAD
 # M3 — HTTP Packet Logger Kernel Module
 
 ## Table of Contents
-=======
-# M3 HTTP Packet Logger and Blacklist Kernel Module
-
-## Project documentation
-
-- [Project overview](#project-overview)
-- [Safety and isolation](#safety-and-isolation)
-- [Implemented module](#implemented-module)
-- [Design notes](#design-notes)
-- [Build steps](#build-steps)
-- [VM test setup](#vm-test-setup)
-- [How to reproduce the experiments](#how-to-reproduce-the-experiments)
-- [Results and evidence](#results-and-evidence)
-- [Modified files](#modified-files)
->>>>>>> ee5b9a8 (Add HTTP netfilter blacklist module)
 
 * [1. Project Overview](#1-project-overview)
 * [2. Testing and Safety Environment](#2-testing-and-safety-environment)
 * [3. Kernel Module Design](#3-kernel-module-design)
 * [4. Implementation Explanation](#4-implementation-explanation)
 
-<<<<<<< HEAD
   * [4.1 Header Files](#41-header-files)
   * [4.2 HTTP Port Constant](#42-http-port-constant)
   * [4.3 Network Namespace Data](#43-network-namespace-data)
@@ -950,15 +933,3 @@ https://github.com/Almutaz97/kernel-playground
 Later, the branch can be merged into the `main` branch of my fork.
 
 The final project demonstrates a simple Linux Netfilter kernel module that detects IPv4 TCP HTTP packets on destination port `80`, logs packet information to the kernel log, and accepts all packets without blocking or modifying traffic.
-=======
-## Project overview
-
-This project is implemented inside the `kernel-playground` repository for the Software Networks Linux kernel/module project.
-
-The implemented work is an out-of-tree Linux kernel module based on the Netfilter subsystem. The module detects IPv4 TCP packets related to HTTP traffic on port `80`, logs useful packet information, and allows runtime blocking of selected source IP addresses through a `/proc` interface.
-
-The main module file is:
-
-```text
-kernel/modules/snf_lkm.c
->>>>>>> ee5b9a8 (Add HTTP netfilter blacklist module)
